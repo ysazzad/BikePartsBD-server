@@ -67,6 +67,10 @@ async function run() {
             const result = await bookingCollection.insertOne(booking)
             res.send(result)
         })
+        app.get('/user', verifyJWT, async (req, res) => {
+            const users = await userCollection.find().toArray()
+            res.send(users)
+        })
         app.put("/user/:email", async (req, res) => {
             const email = req.params.email
             const user = req.body
@@ -78,6 +82,15 @@ async function run() {
             const result = await userCollection.updateOne(filter, updatedDoc, options)
             const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
             res.send({ result, token })
+        })
+        app.put("/user/admin/:email", verifyJWT, async (req, res) => {
+            const email = req.params.email
+            const filter = { email: email }
+            const updatedDoc = {
+                $set: { role: 'admin' },
+            };
+            const result = await userCollection.updateOne(filter, updatedDoc)
+            res.send(result)
         })
 
     }
