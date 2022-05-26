@@ -35,6 +35,7 @@ async function run() {
         await client.connect()
         const itemCollection = client.db('bike_parts').collection('parts');
         const bookingCollection = client.db('bike_parts').collection('booking');
+        const reviewCollection = client.db('bike_parts').collection('review');
         const userCollection = client.db('bike_parts').collection('users');
         const paymentCollection = client.db('doctors_portal').collection('payments');
         //get all items
@@ -80,6 +81,17 @@ async function run() {
             const booking = req.body
             const result = await bookingCollection.insertOne(booking)
             res.send(result)
+        })
+        app.post("/review", async (req, res) => {
+            const review = req.body
+            const result = await reviewCollection.insertOne(review)
+            res.send(result)
+        })
+        app.get("/review", async (req, res) => {
+            const query = {}
+            const cursor = reviewCollection.find(query)
+            const review = await cursor.toArray()
+            res.send(review)
         })
         app.post('/create-payment-intent', verifyJWT, async (req, res) => {
             const service = req.body;
