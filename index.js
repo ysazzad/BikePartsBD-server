@@ -51,6 +51,11 @@ async function run() {
             const items = await itemCollection.findOne(query);
             res.send(items);
         })
+        app.post("/part", async (req, res) => {
+            const newPart = req.body
+            const result = await itemCollection.insertOne(newPart)
+            res.send(result)
+        })
         app.get("/booking", verifyJWT, async (req, res) => {
             const user = req.query.user;
             const decodedEmail = req.decoded.email
