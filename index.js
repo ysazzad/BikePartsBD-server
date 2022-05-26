@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 require('dotenv').config()
 const app = express()
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const port = process.env.PORT || 5000
 
 app.use(cors())
@@ -35,6 +36,7 @@ async function run() {
         const itemCollection = client.db('bike_parts').collection('parts');
         const bookingCollection = client.db('bike_parts').collection('booking');
         const userCollection = client.db('bike_parts').collection('users');
+        const paymentCollection = client.db('doctors_portal').collection('payments');
         //get all items
         app.get("/part", async (req, res) => {
             const query = {}
@@ -62,11 +64,45 @@ async function run() {
             }
 
         })
+        app.get('/booking/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const booking = await bookingCollection.findOne(query);
+            res.send(booking);
+        })
+
         app.post("/booking", async (req, res) => {
             const booking = req.body
             const result = await bookingCollection.insertOne(booking)
             res.send(result)
         })
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+            const service = req.body;
+            const price = service.price;
+            const amount = price * 100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+            res.send({ clientSecret: paymentIntent.client_secret })
+        });
+        app.patch('/booking/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const payment = req.body;
+            const filter = { _id: ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                }
+            }
+
+            const result = await paymentCollection.insertOne(payment);
+            const updatedBooking = await bookingCollection.updateOne(filter, updatedDoc);
+            res.send(updatedBooking);
+        })
+
         app.get('/user', verifyJWT, async (req, res) => {
             const users = await userCollection.find().toArray()
             res.send(users)
@@ -83,14 +119,29 @@ async function run() {
             const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
             res.send({ result, token })
         })
+        app.get('/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = await userCollection.findOne({ email: email });
+            const isAdmin = user.role === 'admin';
+            res.send({ admin: isAdmin })
+        })
+
         app.put("/user/admin/:email", verifyJWT, async (req, res) => {
             const email = req.params.email
-            const filter = { email: email }
-            const updatedDoc = {
-                $set: { role: 'admin' },
-            };
-            const result = await userCollection.updateOne(filter, updatedDoc)
-            res.send(result)
+            const requester = req.decoded.email
+            const requesterAccount = await userCollection.findOne({ email: requester })
+            if (requesterAccount.role === 'admin') {
+                const filter = { email: email }
+                const updatedDoc = {
+                    $set: { role: 'admin' },
+                };
+                const result = await userCollection.updateOne(filter, updatedDoc)
+                res.send(result)
+            }
+            else {
+                res.status(403).send({ message: 'forbidden' })
+            }
+
         })
 
     }
