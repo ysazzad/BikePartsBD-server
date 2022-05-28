@@ -37,7 +37,9 @@ async function run() {
         const bookingCollection = client.db('bike_parts').collection('booking');
         const reviewCollection = client.db('bike_parts').collection('review');
         const userCollection = client.db('bike_parts').collection('users');
-        const paymentCollection = client.db('doctors_portal').collection('payments');
+        // const paymentCollection = client.db('doctors_portal').collection('payments');
+        const paymentCollection = client.db('bike_parts').collection('payments');
+        const profileCollection = client.db('bike_parts').collection('profile');
         //get all items
         app.get("/part", async (req, res) => {
             const query = {}
@@ -87,6 +89,14 @@ async function run() {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const result = await bookingCollection.deleteOne(query)
+            res.send(result)
+
+        })
+        //delete item
+        app.delete("/part/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await itemCollection.deleteOne(query)
             res.send(result)
 
         })
@@ -168,6 +178,35 @@ async function run() {
             }
 
         })
+        // app.put('/profile/:id', async (req, res) => {
+        //     const id = req.params.id
+        //     const updatedUser = req.body
+        //     const filter = { _id: ObjectId(id) };
+        //     const options = { upsert: true };
+        //     const updatedDoc = {
+        //         $set: {
+        //             updatedUser
+        //         }
+        //     };
+        //     const result = await profileCollection.updateOne(filter, updatedDoc, options);
+        //     res.send(result);
+
+        // })
+        app.post("/profile", async (req, res) => {
+            const profile = req.body
+            const result = await profileCollection.insertOne(profile)
+            res.send(result)
+        })
+
+        app.get("/profile/:id", async (req, res) => {
+            const id = req.params.id;
+            console.log(id)
+            const query = { _id: ObjectId(id) };
+            const items = await profileCollection.findOne(query);
+            res.send(items);
+        })
+
+
 
     }
     finally {
