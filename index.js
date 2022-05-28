@@ -192,18 +192,28 @@ async function run() {
         //     res.send(result);
 
         // })
-        app.post("/profile", async (req, res) => {
-            const profile = req.body
-            const result = await profileCollection.insertOne(profile)
-            res.send(result)
+        app.put("/profile/:email", async (req, res) => {
+            const email = req.params.email
+            const user = req.body
+            const filter = {
+                email: email
+            }
+            const options = { upsert: true };
+            const updatedDoc = {
+                $set: user
+            };
+            const result = await userCollection.updateOne(filter, updatedDoc, options);
+            res.send(result);
         })
 
-        app.get("/profile/:id", async (req, res) => {
-            const id = req.params.id;
-            console.log(id)
-            const query = { _id: ObjectId(id) };
-            const items = await profileCollection.findOne(query);
-            res.send(items);
+        app.get("/profile", async (req, res) => {
+            const email = req.query.email;
+            console.log(email);
+            const query = { email: email }
+            const cursor = userCollection.find(query)
+            const result = await cursor.toArray()
+            console.log(result);
+            res.send(result);
         })
 
 
