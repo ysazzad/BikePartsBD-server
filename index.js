@@ -7,8 +7,8 @@ const app = express()
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const port = process.env.PORT || 5000
 
-// app.use(cors())
-app.use(cors({ origin: "https://bike-parts-30217.web.app/" }))
+app.use(cors())
+// app.use(cors({ origin: "https://bike-parts-30217.web.app/" }))
 app.use(express.json())
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.lnf4v.mongodb.net/?retryWrites=true&w=majority`;
@@ -33,7 +33,7 @@ function verifyJWT(req, res, next) {
 }
 async function run() {
     try {
-        client.connect()
+        await client.connect()
         const itemCollection = client.db('bike_parts').collection('parts');
         const bookingCollection = client.db('bike_parts').collection('booking');
         const reviewCollection = client.db('bike_parts').collection('review');
